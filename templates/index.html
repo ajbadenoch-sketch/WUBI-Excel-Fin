@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}WUBI - SaaS Financial Model Generator{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>Build Your SaaS Financial Model in Seconds</h1>
+    <p class="hero-sub">
+        Enter your business assumptions below. Get a free instant preview of your
+        key metrics, then download a complete 7-sheet Excel model with dynamic
+        formulas, charts, scenarios, and sensitivity analysis.
+    </p>
+</section>
+
+<form action="{{ url_for('preview') }}" method="POST" class="assumptions-form">
+
+    <!-- PRICING -->
+    <fieldset>
+        <legend>Pricing (MXN/month)</legend>
+        <div class="field-grid">
+            {% for key in ['price_pro', 'price_proplus', 'price_family'] %}
+            <div class="field">
+                <label for="{{ key }}">{{ param_fields[key][0] }}</label>
+                <input type="number" id="{{ key }}" name="{{ key }}"
+                       value="{{ param_fields[key][2] }}" step="any" required>
+            </div>
+            {% endfor %}
+        </div>
+    </fieldset>
+
+    <!-- MARGINS -->
+    <fieldset>
+        <legend>Gross Margins (%)</legend>
+        <div class="field-grid">
+            {% for key in ['margin_pro', 'margin_proplus', 'margin_family'] %}
+            <div class="field">
+                <label for="{{ key }}">{{ param_fields[key][0] }}</label>
+                <input type="number" id="{{ key }}" name="{{ key }}"
+                       value="{{ param_fields[key][2] }}" step="any" min="0" max="100" required>
+            </div>
+            {% endfor %}
+        </div>
+    </fieldset>
+
+    <!-- CAC -->
+    <fieldset>
+        <legend>Customer Acquisition Cost (MXN)</legend>
+        <div class="field-grid">
+            {% for key in ['cac_pro', 'cac_proplus', 'cac_family'] %}
+            <div class="field">
+                <label for="{{ key }}">{{ param_fields[key][0] }}</label>
+                <input type="number" id="{{ key }}" name="{{ key }}"
+                       value="{{ param_fields[key][2] }}" step="any" required>
+            </div>
+            {% endfor %}
+        </div>
+    </fieldset>
+
+    <!-- CHURN -->
+    <fieldset>
+        <legend>Monthly Churn (%)</legend>
+        <div class="field-grid">
+            {% for key in ['churn_pro', 'churn_proplus', 'churn_family'] %}
+            <div class="field">
+                <label for="{{ key }}">{{ param_fields[key][0] }}</label>
+                <input type="number" id="{{ key }}" name="{{ key }}"
+                       value="{{ param_fields[key][2] }}" step="any" min="0" max="100" required>
+            </div>
+            {% endfor %}
+        </div>
+    </fieldset>
+
+    <!-- FIXED COSTS -->
+    <fieldset>
+        <legend>Monthly Fixed Costs (MXN)</legend>
+        <div class="field-grid">
+            {% for key in ['fixed_cost_1_6', 'fixed_cost_7_12', 'fixed_cost_13_24'] %}
+            <div class="field">
+                <label for="{{ key }}">{{ param_fields[key][0] }}</label>
+                <input type="number" id="{{ key }}" name="{{ key }}"
+                       value="{{ param_fields[key][2] }}" step="any" required>
+            </div>
+            {% endfor %}
+        </div>
+    </fieldset>
+
+    <!-- NEW USERS -->
+    <fieldset>
+        <legend>New Users Per Month</legend>
+        <div class="field-grid">
+            {% for key in ['new_pro_1_6', 'new_pro_7_12', 'new_pro_13_24',
+                           'new_proplus_1_6', 'new_proplus_7_12', 'new_proplus_13_24',
+                           'new_family_1_6', 'new_family_7_12', 'new_family_13_24'] %}
+            <div class="field">
+                <label for="{{ key }}">{{ param_fields[key][0] }}</label>
+                <input type="number" id="{{ key }}" name="{{ key }}"
+                       value="{{ param_fields[key][2] }}" step="any" required>
+            </div>
+            {% endfor %}
+        </div>
+    </fieldset>
+
+    <button type="submit" class="btn btn-primary btn-lg">
+        Generate Free Preview
+    </button>
+</form>
+
+<section class="features">
+    <h2>What You Get</h2>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <h3>7 Sheets</h3>
+            <p>Assumptions, User Growth, P&amp;L, Unit Economics, Dashboard, Scenarios, Sensitivity</p>
+        </div>
+        <div class="feature-card">
+            <h3>Dynamic Formulas</h3>
+            <p>Change any assumption and the entire model recalculates automatically in Excel</p>
+        </div>
+        <div class="feature-card">
+            <h3>Charts Included</h3>
+            <p>User growth line chart and MRR vs Profit bar chart built right in</p>
+        </div>
+        <div class="feature-card">
+            <h3>Scenario Analysis</h3>
+            <p>Conservative, Base, and Optimistic scenarios with sensitivity tables</p>
+        </div>
+    </div>
+</section>
+{% endblock %}

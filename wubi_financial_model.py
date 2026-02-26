@@ -3,6 +3,8 @@ WUBI Financial Model - Excel Generator
 Generates a complete financial model in Excel with all dynamic formulas
 """
 
+import io
+
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.formatting.rule import CellIsRule
@@ -10,9 +12,47 @@ from openpyxl.utils import get_column_letter
 from openpyxl.chart import LineChart, BarChart, Reference
 from openpyxl.workbook.defined_name import DefinedName
 
+# Default assumptions used when no custom params are provided
+DEFAULT_PARAMS = {
+    "price_pro": 149,
+    "price_proplus": 249,
+    "price_family": 399,
+    "margin_pro": 0.84,
+    "margin_proplus": 0.86,
+    "margin_family": 0.88,
+    "cac_pro": 300,
+    "cac_proplus": 350,
+    "cac_family": 400,
+    "churn_pro": 0.04,
+    "churn_proplus": 0.03,
+    "churn_family": 0.02,
+    "fixed_cost_1_6": 6000,
+    "fixed_cost_7_12": 8000,
+    "fixed_cost_13_24": 20000,
+    "new_pro_1_6": 25,
+    "new_pro_7_12": 50,
+    "new_pro_13_24": 100,
+    "new_proplus_1_6": 5,
+    "new_proplus_7_12": 15,
+    "new_proplus_13_24": 30,
+    "new_family_1_6": 2,
+    "new_family_7_12": 5,
+    "new_family_13_24": 20,
+}
 
-def create_wubi_model():
-    """Creates complete WUBI financial model"""
+
+def create_wubi_model(params=None):
+    """Creates complete WUBI financial model.
+
+    Args:
+        params: dict of assumption overrides (see DEFAULT_PARAMS for keys).
+                If None, defaults are used. Values are injected into the
+                Assumptions sheet so all formulas recalculate automatically.
+
+    Returns:
+        filename (str) when called from CLI, or BytesIO when called from web.
+    """
+    p = {**DEFAULT_PARAMS, **(params or {})}
 
     wb = Workbook()
 
@@ -69,11 +109,11 @@ def create_wubi_model():
     ws['A4'] = "Plan Free"
     ws['B4'] = 0
     ws['A5'] = "Plan Pro"
-    ws['B5'] = 149
+    ws['B5'] = p["price_pro"]
     ws['A6'] = "Plan Pro+"
-    ws['B6'] = 249
+    ws['B6'] = p["price_proplus"]
     ws['A7'] = "Plan Family"
-    ws['B7'] = 399
+    ws['B7'] = p["price_family"]
 
     # MARGINS
     ws['A9'] = "GROSS MARGIN (%)"
@@ -82,13 +122,13 @@ def create_wubi_model():
     ws['B9'].fill = section_fill
 
     ws['A10'] = "Margin Pro"
-    ws['B10'] = 0.84
+    ws['B10'] = p["margin_pro"]
     ws['B10'].number_format = '0%'
     ws['A11'] = "Margin Pro+"
-    ws['B11'] = 0.86
+    ws['B11'] = p["margin_proplus"]
     ws['B11'].number_format = '0%'
     ws['A12'] = "Margin Family"
-    ws['B12'] = 0.88
+    ws['B12'] = p["margin_family"]
     ws['B12'].number_format = '0%'
 
     # CAC
@@ -100,11 +140,11 @@ def create_wubi_model():
     ws['A15'] = "CAC Free"
     ws['B15'] = 0
     ws['A16'] = "CAC Pro"
-    ws['B16'] = 300
+    ws['B16'] = p["cac_pro"]
     ws['A17'] = "CAC Pro+"
-    ws['B17'] = 350
+    ws['B17'] = p["cac_proplus"]
     ws['A18'] = "CAC Family"
-    ws['B18'] = 400
+    ws['B18'] = p["cac_family"]
 
     # CHURN
     ws['A20'] = "MONTHLY CHURN (%)"
@@ -113,13 +153,13 @@ def create_wubi_model():
     ws['B20'].fill = section_fill
 
     ws['A21'] = "Churn Pro"
-    ws['B21'] = 0.04
+    ws['B21'] = p["churn_pro"]
     ws['B21'].number_format = '0%'
     ws['A22'] = "Churn Pro+"
-    ws['B22'] = 0.03
+    ws['B22'] = p["churn_proplus"]
     ws['B22'].number_format = '0%'
     ws['A23'] = "Churn Family"
-    ws['B23'] = 0.02
+    ws['B23'] = p["churn_family"]
     ws['B23'].number_format = '0%'
 
     # FIXED COSTS
@@ -129,11 +169,11 @@ def create_wubi_model():
     ws['B25'].fill = section_fill
 
     ws['A26'] = "Month 1-6"
-    ws['B26'] = 6000
+    ws['B26'] = p["fixed_cost_1_6"]
     ws['A27'] = "Month 7-12"
-    ws['B27'] = 8000
+    ws['B27'] = p["fixed_cost_7_12"]
     ws['A28'] = "Month 13-24"
-    ws['B28'] = 20000
+    ws['B28'] = p["fixed_cost_13_24"]
 
     # NEW USERS
     ws['A30'] = "NEW USERS PER MONTH"
@@ -150,19 +190,19 @@ def create_wubi_model():
     ws['D30'].font = section_font
 
     ws['A31'] = "Month 1-6"
-    ws['B31'] = 25
-    ws['C31'] = 5
-    ws['D31'] = 2
+    ws['B31'] = p["new_pro_1_6"]
+    ws['C31'] = p["new_proplus_1_6"]
+    ws['D31'] = p["new_family_1_6"]
 
     ws['A32'] = "Month 7-12"
-    ws['B32'] = 50
-    ws['C32'] = 15
-    ws['D32'] = 5
+    ws['B32'] = p["new_pro_7_12"]
+    ws['C32'] = p["new_proplus_7_12"]
+    ws['D32'] = p["new_family_7_12"]
 
     ws['A33'] = "Month 13-24"
-    ws['B33'] = 100
-    ws['C33'] = 30
-    ws['D33'] = 20
+    ws['B33'] = p["new_pro_13_24"]
+    ws['C33'] = p["new_proplus_13_24"]
+    ws['D33'] = p["new_family_13_24"]
 
     # Apply input formatting
     for row in [4, 5, 6, 7, 10, 11, 12, 15, 16, 17, 18, 21, 22, 23, 26, 27, 28, 31, 32, 33]:
@@ -698,8 +738,21 @@ def create_wubi_model():
             operator='lessThan', formula=['3'],
             fill=PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")))
 
-    # Save file
-    filename = "WUBI_Financial_Model.xlsx"
+    return wb
+
+
+def create_wubi_model_bytes(params=None):
+    """Generate the model and return it as bytes (for web download)."""
+    wb = create_wubi_model(params)
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return buf
+
+
+def save_wubi_model(params=None, filename="WUBI_Financial_Model.xlsx"):
+    """Generate the model and save to disk (CLI usage)."""
+    wb = create_wubi_model(params)
     wb.save(filename)
     print(f"Financial model created successfully: {filename}")
     print()
@@ -713,9 +766,96 @@ def create_wubi_model():
     print("  7. Sensitivity - LTV/CAC sensitivity table")
     print()
     print("Change any value in 'Assumptions' and everything recalculates automatically.")
-
     return filename
 
 
+def compute_preview(params=None):
+    """Compute key metrics server-side for the free preview.
+
+    Returns a dict of metrics that can be displayed before payment.
+    """
+    p = {**DEFAULT_PARAMS, **(params or {})}
+
+    # Simulate 24 months of user growth
+    active_pro = 0.0
+    active_proplus = 0.0
+    active_family = 0.0
+
+    monthly_data = []
+
+    for month in range(1, 25):
+        if month <= 6:
+            new_pro = p["new_pro_1_6"]
+            new_proplus = p["new_proplus_1_6"]
+            new_family = p["new_family_1_6"]
+            fixed_cost = p["fixed_cost_1_6"]
+        elif month <= 12:
+            new_pro = p["new_pro_7_12"]
+            new_proplus = p["new_proplus_7_12"]
+            new_family = p["new_family_7_12"]
+            fixed_cost = p["fixed_cost_7_12"]
+        else:
+            new_pro = p["new_pro_13_24"]
+            new_proplus = p["new_proplus_13_24"]
+            new_family = p["new_family_13_24"]
+            fixed_cost = p["fixed_cost_13_24"]
+
+        active_pro = active_pro * (1 - p["churn_pro"]) + new_pro
+        active_proplus = active_proplus * (1 - p["churn_proplus"]) + new_proplus
+        active_family = active_family * (1 - p["churn_family"]) + new_family
+
+        mrr_pro = active_pro * p["price_pro"]
+        mrr_proplus = active_proplus * p["price_proplus"]
+        mrr_family = active_family * p["price_family"]
+        mrr_total = mrr_pro + mrr_proplus + mrr_family
+
+        gross_margin = (
+            mrr_pro * p["margin_pro"]
+            + mrr_proplus * p["margin_proplus"]
+            + mrr_family * p["margin_family"]
+        )
+        net_profit = gross_margin - fixed_cost
+
+        monthly_data.append({
+            "month": month,
+            "active_pro": round(active_pro),
+            "active_proplus": round(active_proplus),
+            "active_family": round(active_family),
+            "total_users": round(active_pro + active_proplus + active_family),
+            "mrr": round(mrr_total),
+            "gross_margin": round(gross_margin),
+            "fixed_cost": round(fixed_cost),
+            "net_profit": round(net_profit),
+        })
+
+    # LTV/CAC
+    def ltv_cac(price, margin, churn, cac):
+        if churn == 0 or cac == 0:
+            return 0
+        ltv = price * margin / churn
+        return round(ltv / cac, 1)
+
+    def payback(price, margin, cac):
+        monthly_margin = price * margin
+        if monthly_margin == 0:
+            return 0
+        return round(cac / monthly_margin, 1)
+
+    m6 = monthly_data[5]
+    m12 = monthly_data[11]
+    m24 = monthly_data[23]
+
+    return {
+        "monthly_data": monthly_data,
+        "snapshots": {"6": m6, "12": m12, "24": m24},
+        "ltv_cac_pro": ltv_cac(p["price_pro"], p["margin_pro"], p["churn_pro"], p["cac_pro"]),
+        "ltv_cac_proplus": ltv_cac(p["price_proplus"], p["margin_proplus"], p["churn_proplus"], p["cac_proplus"]),
+        "ltv_cac_family": ltv_cac(p["price_family"], p["margin_family"], p["churn_family"], p["cac_family"]),
+        "payback_pro": payback(p["price_pro"], p["margin_pro"], p["cac_pro"]),
+        "payback_proplus": payback(p["price_proplus"], p["margin_proplus"], p["cac_proplus"]),
+        "payback_family": payback(p["price_family"], p["margin_family"], p["cac_family"]),
+    }
+
+
 if __name__ == "__main__":
-    create_wubi_model()
+    save_wubi_model()
