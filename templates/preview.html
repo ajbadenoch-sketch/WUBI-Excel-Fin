@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Preview - WUBI Financial Model{% endblock %}
+
+{% block content %}
+<h1>Your Financial Model Preview</h1>
+<p class="subtitle">Here's a snapshot of your projected metrics. Download the full Excel model for the complete 7-sheet workbook with dynamic formulas and charts.</p>
+
+<!-- KPI Cards -->
+<div class="kpi-row">
+    <div class="kpi-card">
+        <span class="kpi-label">MRR at Month 24</span>
+        <span class="kpi-value">${{ "{:,.0f}".format(preview.snapshots["24"].mrr) }}</span>
+    </div>
+    <div class="kpi-card">
+        <span class="kpi-label">Total Users (M24)</span>
+        <span class="kpi-value">{{ "{:,}".format(preview.snapshots["24"].total_users) }}</span>
+    </div>
+    <div class="kpi-card">
+        <span class="kpi-label">Net Profit (M24)</span>
+        <span class="kpi-value {% if preview.snapshots['24'].net_profit >= 0 %}positive{% else %}negative{% endif %}">
+            ${{ "{:,.0f}".format(preview.snapshots["24"].net_profit) }}
+        </span>
+    </div>
+    <div class="kpi-card">
+        <span class="kpi-label">LTV/CAC Pro</span>
+        <span class="kpi-value {% if preview.ltv_cac_pro >= 3 %}positive{% else %}negative{% endif %}">
+            {{ preview.ltv_cac_pro }}x
+        </span>
+    </div>
+</div>
+
+<!-- Snapshot Table -->
+<h2>Milestone Snapshots</h2>
+<div class="table-wrapper">
+    <table>
+        <thead>
+            <tr>
+                <th>Metric</th>
+                <th>6 Months</th>
+                <th>12 Months</th>
+                <th>24 Months</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Total Users</td>
+                <td>{{ "{:,}".format(preview.snapshots["6"].total_users) }}</td>
+                <td>{{ "{:,}".format(preview.snapshots["12"].total_users) }}</td>
+                <td>{{ "{:,}".format(preview.snapshots["24"].total_users) }}</td>
+            </tr>
+            <tr>
+                <td>MRR</td>
+                <td>${{ "{:,.0f}".format(preview.snapshots["6"].mrr) }}</td>
+                <td>${{ "{:,.0f}".format(preview.snapshots["12"].mrr) }}</td>
+                <td>${{ "{:,.0f}".format(preview.snapshots["24"].mrr) }}</td>
+            </tr>
+            <tr>
+                <td>Gross Margin</td>
+                <td>${{ "{:,.0f}".format(preview.snapshots["6"].gross_margin) }}</td>
+                <td>${{ "{:,.0f}".format(preview.snapshots["12"].gross_margin) }}</td>
+                <td>${{ "{:,.0f}".format(preview.snapshots["24"].gross_margin) }}</td>
+            </tr>
+            <tr>
+                <td>Fixed Costs</td>
+                <td>${{ "{:,.0f}".format(preview.snapshots["6"].fixed_cost) }}</td>
+                <td>${{ "{:,.0f}".format(preview.snapshots["12"].fixed_cost) }}</td>
+                <td>${{ "{:,.0f}".format(preview.snapshots["24"].fixed_cost) }}</td>
+            </tr>
+            <tr class="highlight-row">
+                <td>Net Profit</td>
+                <td class="{% if preview.snapshots['6'].net_profit >= 0 %}positive{% else %}negative{% endif %}">
+                    ${{ "{:,.0f}".format(preview.snapshots["6"].net_profit) }}
+                </td>
+                <td class="{% if preview.snapshots['12'].net_profit >= 0 %}positive{% else %}negative{% endif %}">
+                    ${{ "{:,.0f}".format(preview.snapshots["12"].net_profit) }}
+                </td>
+                <td class="{% if preview.snapshots['24'].net_profit >= 0 %}positive{% else %}negative{% endif %}">
+                    ${{ "{:,.0f}".format(preview.snapshots["24"].net_profit) }}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Unit Economics -->
+<h2>Unit Economics</h2>
+<div class="table-wrapper">
+    <table>
+        <thead>
+            <tr>
+                <th>Metric</th>
+                <th>Pro</th>
+                <th>Pro+</th>
+                <th>Family</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>LTV/CAC</td>
+                <td class="{% if preview.ltv_cac_pro >= 3 %}positive{% else %}negative{% endif %}">{{ preview.ltv_cac_pro }}x</td>
+                <td class="{% if preview.ltv_cac_proplus >= 3 %}positive{% else %}negative{% endif %}">{{ preview.ltv_cac_proplus }}x</td>
+                <td class="{% if preview.ltv_cac_family >= 3 %}positive{% else %}negative{% endif %}">{{ preview.ltv_cac_family }}x</td>
+            </tr>
+            <tr>
+                <td>Payback (months)</td>
+                <td>{{ preview.payback_pro }}</td>
+                <td>{{ preview.payback_proplus }}</td>
+                <td>{{ preview.payback_family }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Monthly Chart (simple CSS bar chart) -->
+<h2>Monthly MRR Trend</h2>
+<div class="chart-bars">
+    {% set max_mrr = preview.monthly_data[-1].mrr if preview.monthly_data[-1].mrr > 0 else 1 %}
+    {% for m in preview.monthly_data %}
+    <div class="bar-col">
+        <div class="bar" style="height: {{ (m.mrr / max_mrr * 120)|int }}px"
+             title="M{{ m.month }}: ${{ '{:,.0f}'.format(m.mrr) }}">
+        </div>
+        <span class="bar-label">{{ m.month }}</span>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- CTA -->
+<div class="cta-section">
+    <h2>Get the Full Excel Model</h2>
+    <p>Download a complete 7-sheet workbook with all formulas, charts, scenario analysis, and sensitivity tables - fully customized with your assumptions.</p>
+
+    <form action="{{ url_for('create_checkout_session') }}" method="POST">
+        <button type="submit" class="btn btn-primary btn-lg">
+            Download Full Model - {{ display_price }}
+        </button>
+    </form>
+
+    <p class="cta-note">One-time payment. Instant download. No subscription.</p>
+</div>
+
+<a href="{{ url_for('index') }}" class="btn btn-secondary">Back - Edit Assumptions</a>
+{% endblock %}

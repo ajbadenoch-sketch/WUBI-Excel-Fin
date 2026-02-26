@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Download Ready - WUBI Financial Model{% endblock %}
+
+{% block content %}
+<div class="success-page">
+    <h1>Payment Successful!</h1>
+    <p>Your custom financial model is ready. Click below to download.</p>
+
+    <a href="{{ url_for('download') }}" class="btn btn-primary btn-lg">
+        Download WUBI_Financial_Model.xlsx
+    </a>
+
+    <p class="success-note">
+        The Excel file includes all 7 sheets with your custom assumptions baked in.
+        Every formula is dynamic - change any value in the Assumptions sheet and
+        the entire model recalculates automatically.
+    </p>
+
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">Generate Another Model</a>
+</div>
+{% endblock %}

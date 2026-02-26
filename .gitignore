@@ -22,5 +22,8 @@ env/
 .DS_Store
 Thumbs.db
 
+# Environment
+.env
+
 # Generated Excel files (uncomment to ignore)
 # *.xlsx
