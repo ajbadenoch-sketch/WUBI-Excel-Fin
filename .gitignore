@@ -24,3 +24,9 @@ Thumbs.db
 
 # Generated Excel files (uncomment to ignore)
 # *.xlsx
+
+# Database
+*.db
+
+# Environment
+.env

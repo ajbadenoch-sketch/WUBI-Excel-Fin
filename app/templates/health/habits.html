@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% set active = "habits" %}
+{% block title %}Habitos{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Sistema de Habitos</h1>
+    <button class="btn btn-primary" onclick="document.getElementById('addHabit').classList.add('active')">+ Habito</button>
+</div>
+
+<!-- Habits List -->
+{% if habits %}
+{% for h in habits %}
+<div class="card">
+    <div class="card-header">
+        <div class="flex gap-1" style="align-items: center;">
+            <form method="post" action="/health/habit/{{ h.id }}/toggle" style="display:inline">
+                <input type="hidden" name="log_date" value="{{ today.isoformat() }}">
+                <button type="submit" class="btn-icon {% if h.today_log and h.today_log.completed %}btn-success{% else %}btn-ghost{% endif %}" style="width: 36px; height: 36px;">
+                    {% if h.today_log and h.today_log.completed %}&#10003;{% else %}&#9675;{% endif %}
+                </button>
+            </form>
+            <div>
+                <h3>{{ h.name }}</h3>
+                <span class="tag">{{ h.category or 'general' }}</span>
+                <span class="text-muted" style="font-size: 0.75rem;">{{ h.frequency }}</span>
+            </div>
+        </div>
+        <form method="post" action="/health/habit/{{ h.id }}/delete" style="display:inline">
+            <button type="submit" class="btn btn-ghost btn-sm">&#10005;</button>
+        </form>
+    </div>
+
+    <!-- 7-day history -->
+    <div class="flex gap-1" style="align-items: center;">
+        <span class="text-muted" style="font-size: 0.75rem; min-width: 50px;">7 dias:</span>
+        <div class="habit-dots">
+            {% for day in h.week_history %}
+            <div class="habit-dot {% if day.completed %}filled{% endif %}" title="{{ day.date.strftime('%d %b') }}">
+                {% if day.completed %}&#10003;{% else %}{{ day.date.strftime('%d') }}{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="card">
+    <div class="empty-state">
+        <div class="icon">&#10003;</div>
+        <p>Sin habitos activos. Crea habitos para construir rutinas sostenibles.</p>
+        <button class="btn btn-primary mt-2" onclick="document.getElementById('addHabit').classList.add('active')">Crear Primer Habito</button>
+    </div>
+</div>
+{% endif %}
+
+<!-- Suggested Habits -->
+<div class="card">
+    <div class="card-header"><h3>Habitos Sugeridos para tu Perfil</h3></div>
+    <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.8;">
+        <p><strong class="text-accent">Salud:</strong> Medir glucosa, Tomar medicamento, 8 vasos de agua, Caminar 30 min, Dormir 7+ horas</p>
+        <p><strong style="color: var(--info);">Finanzas:</strong> Registrar gastos, Revisar presupuesto, No gasto impulsivo</p>
+        <p><strong style="color: var(--success);">Estructura:</strong> Planear el dia, Revisar tareas, 5 min meditacion, Leer 15 min</p>
+    </div>
+</div>
+
+<!-- Add Habit Modal -->
+<div id="addHabit" class="modal-overlay">
+    <div class="modal">
+        <h2>Crear Habito</h2>
+        <form method="post" action="/health/habit/add">
+            <div class="form-group">
+                <label>Nombre del habito</label>
+                <input type="text" name="name" required placeholder="Ej: Medir glucosa en ayunas">
+            </div>
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label>Categoria</label>
+                    <select name="category">
+                        <option value="health">Salud</option>
+                        <option value="finance">Finanzas</option>
+                        <option value="productivity">Productividad</option>
+                        <option value="personal">Personal</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Frecuencia</label>
+                    <select name="frequency">
+                        <option value="daily">Diario</option>
+                        <option value="weekly">Semanal</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex gap-1">
+                <button type="submit" class="btn btn-primary">Crear</button>
+                <button type="button" class="btn btn-ghost" onclick="this.closest('.modal-overlay').classList.remove('active')">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

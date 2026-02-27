@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% set active = "health" %}
+{% block title %}Salud General{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Salud General</h1>
+    <div class="flex gap-1">
+        <a href="/health/metrics" class="btn btn-ghost">Registrar Metricas</a>
+        <a href="/health/habits" class="btn btn-ghost">Habitos</a>
+    </div>
+</div>
+
+<!-- Health Score -->
+<div class="card" style="text-align: center; padding: 2rem;">
+    <div class="score-ring {% if health_score >= 75 %}score-excellent{% elif health_score >= 50 %}score-good{% elif health_score >= 30 %}score-warning{% else %}score-danger{% endif %}" style="--pct: {{ health_score }}">
+        <span class="value">{{ health_score }}</span>
+    </div>
+    <div class="metric-label" style="font-size: 1rem;">Score de Salud</div>
+</div>
+
+<!-- Key Metrics -->
+<div class="grid grid-4">
+    <div class="metric-card">
+        <div class="metric-value">{{ latest.weight_kg if latest and latest.weight_kg else '--' }}</div>
+        <div class="metric-label">Peso (kg)</div>
+        {% if bmi %}
+        <div class="metric-sub">IMC: {{ bmi }}</div>
+        {% endif %}
+    </div>
+    <div class="metric-card">
+        <div class="metric-value {% if latest and latest.glucose_fasting %}{% if latest.glucose_fasting > 130 %}text-danger{% elif latest.glucose_fasting <= 100 %}text-success{% else %}text-warning{% endif %}{% endif %}">
+            {{ latest.glucose_fasting if latest and latest.glucose_fasting else '--' }}
+        </div>
+        <div class="metric-label">Glucosa Ayunas</div>
+        <div class="metric-sub">mg/dL (meta: &lt;130)</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value {% if total_minutes_week >= 150 %}text-success{% elif total_minutes_week >= 90 %}text-warning{% else %}text-danger{% endif %}">{{ total_minutes_week }}</div>
+        <div class="metric-label">Min Ejercicio/Sem</div>
+        <div class="metric-sub">Meta: 150 min</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value">{{ latest.sleep_hours if latest and latest.sleep_hours else '--' }}</div>
+        <div class="metric-label">Horas Sueno</div>
+        <div class="metric-sub">Meta: 7-8 hrs</div>
+    </div>
+</div>
+
+<div class="grid grid-2">
+    <!-- Quick Log -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Registrar Ejercicio</h3>
+        </div>
+        <form method="post" action="/health/exercise/add">
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label>Fecha</label>
+                    <input type="date" name="exercise_date" required>
+                </div>
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <select name="exercise_type">
+                        <option value="swimming">Natacion</option>
+                        <option value="strength">Fuerza</option>
+                        <option value="walking">Caminata</option>
+                        <option value="other">Otro</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label>Duracion (min)</label>
+                    <input type="number" name="duration_minutes" required placeholder="60">
+                </div>
+                <div class="form-group">
+                    <label>Intensidad (1-10)</label>
+                    <input type="range" name="intensity" min="1" max="10" value="5">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Registrar</button>
+        </form>
+    </div>
+
+    <!-- Habits Today -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Habitos de Hoy</h3>
+            <a href="/health/habits" class="btn btn-sm btn-ghost">Ver todos</a>
+        </div>
+        {% if habit_status %}
+        {% for hs in habit_status %}
+        <div class="task-item">
+            <form method="post" action="/health/habit/{{ hs.habit.id }}/toggle" style="display:inline">
+                <button type="submit" class="btn-icon {% if hs.done_today %}btn-success{% else %}btn-ghost{% endif %}">
+                    {% if hs.done_today %}&#10003;{% else %}&#9675;{% endif %}
+                </button>
+            </form>
+            <span class="task-title">{{ hs.habit.name }}</span>
+            {% if hs.streak > 0 %}
+            <span class="tag tag-nice">{{ hs.streak }} dias</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-state" style="padding: 1rem;">
+            <p>Sin habitos activos. <a href="/health/habits">Crear habitos</a></p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Exercise This Week -->
+<div class="card">
+    <div class="card-header">
+        <h3>Ejercicio Esta Semana</h3>
+        <span class="font-bold">{{ total_minutes_week }} min totales</span>
+    </div>
+    {% if exercises_week %}
+    <table>
+        <thead><tr><th>Fecha</th><th>Tipo</th><th>Duracion</th><th>Intensidad</th></tr></thead>
+        <tbody>
+            {% for e in exercises_week %}
+            <tr>
+                <td>{{ e.exercise_date.strftime('%d %b') }}</td>
+                <td><span class="tag">{{ e.exercise_type.value }}</span></td>
+                <td>{{ e.duration_minutes }} min</td>
+                <td>{{ e.intensity }}/10</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state" style="padding: 1rem;">
+        <p>Sin ejercicio registrado esta semana</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Weight & Glucose Trends -->
+{% if weight_trend %}
+<div class="card">
+    <div class="card-header"><h3>Tendencia de Peso (30 dias)</h3></div>
+    <table>
+        <thead><tr><th>Fecha</th><th>Peso (kg)</th><th>Cambio</th></tr></thead>
+        <tbody>
+            {% for m in weight_trend %}
+            <tr>
+                <td>{{ m.metric_date.strftime('%d %b') }}</td>
+                <td class="font-bold">{{ m.weight_kg }}</td>
+                <td>
+                    {% if loop.index > 1 %}
+                    {% set change = m.weight_kg - weight_trend[loop.index0 - 1].weight_kg %}
+                    <span class="{% if change < 0 %}positive{% elif change > 0 %}negative{% endif %}">
+                        {{ "{:+.1f}".format(change) }} kg
+                    </span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- Diabetes Management Info -->
+<div class="card">
+    <div class="card-header"><h3>Guia Diabetes T2 - Metas</h3></div>
+    <div style="font-size: 0.85rem; line-height: 1.8; color: var(--text-muted);">
+        <p><strong class="text-accent">Glucosa ayunas:</strong> 80-130 mg/dL</p>
+        <p><strong class="text-accent">Glucosa post-comida (2hrs):</strong> &lt;180 mg/dL</p>
+        <p><strong class="text-accent">HbA1c:</strong> &lt;7% (meta ideal &lt;6.5%)</p>
+        <p><strong class="text-accent">Presion arterial:</strong> &lt;130/80 mmHg</p>
+        <p><strong class="text-accent">Ejercicio:</strong> 150 min/semana minimo (natacion es ideal)</p>
+        <p><strong class="text-accent">Sueno:</strong> 7-8 horas (clave para control glucemico)</p>
+        <p class="mt-1"><strong style="color: var(--warning);">Nota:</strong> El estres financiero eleva cortisol, que a su vez eleva glucosa. Controlar finanzas = controlar glucosa.</p>
+    </div>
+</div>
+{% endblock %}
