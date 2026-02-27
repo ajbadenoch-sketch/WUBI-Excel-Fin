@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% set active = "daily" %}
+{% block title %}Plan Diario - {{ today }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Plan Diario</h1>
+        <div class="nav-arrows mt-1">
+            <a href="/plos/daily?target_date={{ prev_date }}">&#9664;</a>
+            <span>{{ today.strftime('%A %d de %B, %Y') }}</span>
+            <a href="/plos/daily?target_date={{ next_date }}">&#9654;</a>
+        </div>
+    </div>
+    <div class="metric-card" style="min-width: 100px;">
+        <div class="metric-value {% if score >= 70 %}text-success{% elif score >= 40 %}text-warning{% else %}text-danger{% endif %}">{{ score }}%</div>
+        <div class="metric-label">Score del Dia</div>
+        <div class="metric-sub">{{ done_tasks }}/{{ total_tasks }} tareas</div>
+    </div>
+</div>
+
+<div class="grid grid-2">
+    <!-- Left: Tasks -->
+    <div>
+        <!-- Add Task -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Agregar Tarea</h3>
+            </div>
+            <form method="post" action="/plos/task/add">
+                <input type="hidden" name="plan_date" value="{{ today.isoformat() }}">
+                <div class="form-group">
+                    <input type="text" name="title" required placeholder="Que necesitas hacer?">
+                </div>
+                <div class="grid grid-3">
+                    <div class="form-group">
+                        <label>Prioridad</label>
+                        <select name="priority">
+                            <option value="must">MUST</option>
+                            <option value="should" selected>SHOULD</option>
+                            <option value="nice">NICE</option>
+                            <option value="parking">PARKING</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Categoria</label>
+                        <select name="category">
+                            <option value="work">Trabajo</option>
+                            <option value="personal">Personal</option>
+                            <option value="finance">Finanzas</option>
+                            <option value="health">Salud</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Minutos Est.</label>
+                        <input type="number" name="estimated_minutes" placeholder="30">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Agregar</button>
+            </form>
+        </div>
+
+        <!-- MUST Tasks -->
+        <div class="card">
+            <div class="card-header">
+                <h3><span class="tag tag-must">MUST</span> Obligatorio</h3>
+                <span class="text-muted">{{ grouped_tasks['must']|length }} tareas</span>
+            </div>
+            {% for task in grouped_tasks['must'] %}
+            <div class="task-item {% if task.status.value == 'done' %}done{% endif %}">
+                <form method="post" action="/plos/task/{{ task.id }}/toggle" style="display:inline">
+                    <input type="hidden" name="plan_date" value="{{ today.isoformat() }}">
+                    <button type="submit" class="btn-icon {% if task.status.value == 'done' %}btn-success{% else %}btn-ghost{% endif %}">
+                        {% if task.status.value == 'done' %}&#10003;{% else %}&#9675;{% endif %}
+                    </button>
+                </form>
+                <span class="task-title">{{ task.title }}</span>
+                <span class="tag tag-{{ task.category or 'personal' }}" style="font-size: 0.65rem;">{{ task.category or 'personal' }}</span>
+                <div class="task-actions">
+                    <form method="post" action="/plos/task/{{ task.id }}/defer" style="display:inline">
+                        <input type="hidden" name="plan_date" value="{{ today.isoformat() }}">
+                        <button type="submit" class="btn btn-ghost btn-sm" title="Diferir">&#10145;</button>
+                    </form>
+                    <form method="post" action="/plos/task/{{ task.id }}/delete" style="display:inline">
+                        <input type="hidden" name="plan_date" value="{{ today.isoformat() }}">
+                        <button type="submit" class="btn btn-ghost btn-sm" title="Eliminar">&#10005;</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+            {% if not grouped_tasks['must'] %}
+            <p class="text-muted" style="font-size: 0.85rem;">Sin tareas MUST para hoy</p>
+            {% endif %}
+        </div>
+
+        <!-- SHOULD Tasks -->
+        <div class="card">
+            <div class="card-header">
+                <h3><span class="tag tag-should">SHOULD</span> Importante</h3>
+                <span class="text-muted">{{ grouped_tasks['should']|length }}</span>
+            </div>
+            {% for task in grouped_tasks['should'] %}
+            <div class="task-item {% if task.status.value == 'done' %}done{% endif %}">
+                <form method="post" action="/plos/task/{{ task.id }}/toggle" style="display:inline">
+                    <input type="hidden" name="plan_date" value="{{ today.isoformat() }}">
+                    <button type="submit" class="btn-icon {% if task.status.value == 'done' %}btn-success{% else %}btn-ghost{% endif %}">
+                        {% if task.status.value == 'done' %}&#10003;{% else %}&#9675;{% endif %}
+                    </button>
+                </form>
+                <span class="task-title">{{ task.title }}</span>
+                <div class="task-actions">
+                    <form method="post" action="/plos/task/{{ task.id }}/defer" style="display:inline">
+                        <input type="hidden" name="plan_date" value="{{ today.isoformat() }}">
+                        <button type="submit" class="btn btn-ghost btn-sm">&#10145;</button>
+                    </form>
+                    <form method="post" action="/plos/task/{{ task.id }}/delete" style="display:inline">
+                        <input type="hidden" name="plan_date" value="{{ today.isoformat() }}">
+                        <button type="submit" class="btn btn-ghost btn-sm">&#10005;</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+            {% if not grouped_tasks['should'] %}
+            <p class="text-muted" style="font-size: 0.85rem;">Sin tareas SHOULD</p>
+            {% endif %}
+        </div>
+
+        <!-- NICE Tasks -->
+        <div class="card">
+            <div class="card-header">
+                <h3><span class="tag tag-nice">NICE</span> Deseable</h3>
+                <span class="text-muted">{{ grouped_tasks['nice']|length }}</span>
+            </div>
+            {% for task in grouped_tasks['nice'] %}
+            <div class="task-item {% if task.status.value == 'done' %}done{% endif %}">
+                <form method="post" action="/plos/task/{{ task.id }}/toggle" style="display:inline">
+                    <input type="hidden" name="plan_date" value="{{ today.isoformat() }}">
+                    <button type="submit" class="btn-icon {% if task.status.value == 'done' %}btn-success{% else %}btn-ghost{% endif %}">
+                        {% if task.status.value == 'done' %}&#10003;{% else %}&#9675;{% endif %}
+                    </button>
+                </form>
+                <span class="task-title">{{ task.title }}</span>
+                <div class="task-actions">
+                    <form method="post" action="/plos/task/{{ task.id }}/delete" style="display:inline">
+                        <input type="hidden" name="plan_date" value="{{ today.isoformat() }}">
+                        <button type="submit" class="btn btn-ghost btn-sm">&#10005;</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+            {% if not grouped_tasks['nice'] %}
+            <p class="text-muted" style="font-size: 0.85rem;">Sin tareas NICE</p>
+            {% endif %}
+        </div>
+
+        <!-- PARKING LOT -->
+        <div class="card">
+            <div class="card-header">
+                <h3><span class="tag tag-parking">PARKING</span> Estacionamiento</h3>
+                <span class="text-muted">{{ grouped_tasks['parking']|length }}</span>
+            </div>
+            {% for task in grouped_tasks['parking'] %}
+            <div class="task-item">
+                <span class="task-title text-muted">{{ task.title }}</span>
+                <div class="task-actions">
+                    <form method="post" action="/plos/task/{{ task.id }}/delete" style="display:inline">
+                        <input type="hidden" name="plan_date" value="{{ today.isoformat() }}">
+                        <button type="submit" class="btn btn-ghost btn-sm">&#10005;</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+            {% if not grouped_tasks['parking'] %}
+            <p class="text-muted" style="font-size: 0.85rem;">Parking lot vacio</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right: Daily Check-in -->
+    <div>
+        <div class="card">
+            <div class="card-header">
+                <h3>Check-in del Dia</h3>
+            </div>
+            <form method="post" action="/plos/daily/plan">
+                <input type="hidden" name="plan_date" value="{{ today.isoformat() }}">
+
+                <div class="form-group">
+                    <label>Prioridad #1 del dia</label>
+                    <input type="text" name="top_priority"
+                           value="{{ plan.top_priority if plan else '' }}"
+                           placeholder="Lo MAS importante de hoy es...">
+                </div>
+
+                <div class="form-group">
+                    <label>Nivel de Energia ({{ plan.energy_level if plan else 5 }})</label>
+                    <input type="range" name="energy_level" min="1" max="10"
+                           value="{{ plan.energy_level if plan else 5 }}">
+                    <div class="range-labels"><span>Bajo</span><span>Alto</span></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Estado de Animo - Manana ({{ plan.mood_morning if plan else 5 }})</label>
+                    <input type="range" name="mood_morning" min="1" max="10"
+                           value="{{ plan.mood_morning if plan else 5 }}">
+                    <div class="range-labels"><span>Mal</span><span>Excelente</span></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Estado de Animo - Noche ({{ plan.mood_evening if plan and plan.mood_evening else '-' }})</label>
+                    <input type="range" name="mood_evening" min="1" max="10"
+                           value="{{ plan.mood_evening if plan and plan.mood_evening else 5 }}">
+                    <div class="range-labels"><span>Mal</span><span>Excelente</span></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Nivel de Estres ({{ plan.stress_level if plan else 5 }})</label>
+                    <input type="range" name="stress_level" min="1" max="10"
+                           value="{{ plan.stress_level if plan else 5 }}">
+                    <div class="range-labels"><span>Relajado</span><span>Muy alto</span></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Notas del dia</label>
+                    <textarea name="notes" placeholder="Reflexiones, aprendizajes...">{{ plan.notes if plan else '' }}</textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Guardar Check-in</button>
+            </form>
+        </div>
+
+        <!-- Tips -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Reglas del Sistema</h3>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.7;">
+                <p><strong class="text-accent">MUST:</strong> Max 3 por dia. Si no las haces, el dia fallo.</p>
+                <p><strong style="color: var(--info);">SHOULD:</strong> Max 5. Importantes pero no criticas.</p>
+                <p><strong class="text-success">NICE:</strong> Bonus. Si las haces, genial.</p>
+                <p><strong>PARKING:</strong> Ideas y tareas futuras. No cuestan energia.</p>
+                <p class="mt-1"><strong>Regla Antisobrecarga:</strong> Max 3 MUST + 5 SHOULD por dia.</p>
+                <p><strong>Regla de Diferimiento:</strong> Si una tarea se difiere 3 veces, reevaluarla.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% set active = "weekly" %}
+{% block title %}Revision Semanal{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Revision Semanal</h1>
+        <div class="nav-arrows mt-1">
+            <a href="/plos/weekly?week_start={{ prev_week }}">&#9664;</a>
+            <span>{{ week_start.strftime('%d %b') }} - {{ week_end.strftime('%d %b, %Y') }}</span>
+            <a href="/plos/weekly?week_start={{ next_week }}">&#9654;</a>
+        </div>
+    </div>
+</div>
+
+<!-- Scores -->
+<div class="grid grid-3">
+    <div class="metric-card">
+        <div class="metric-value {% if execution_score >= 70 %}text-success{% elif execution_score >= 40 %}text-warning{% else %}text-danger{% endif %}">{{ execution_score }}%</div>
+        <div class="metric-label">Ejecucion</div>
+        <div class="metric-sub">{{ done_tasks }}/{{ total_tasks }} tareas completadas</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value {% if wellbeing_score >= 70 %}text-success{% elif wellbeing_score >= 40 %}text-warning{% else %}text-danger{% endif %}">{{ wellbeing_score }}%</div>
+        <div class="metric-label">Bienestar</div>
+        <div class="metric-sub">Mood {{ avg_mood }} | Energia {{ avg_energy }} | Estres {{ avg_stress }}</div>
+    </div>
+    <div class="metric-card">
+        <div class="score-ring {% if overall_score >= 75 %}score-excellent{% elif overall_score >= 50 %}score-good{% elif overall_score >= 30 %}score-warning{% else %}score-danger{% endif %}" style="--pct: {{ overall_score }}; width: 100px; height: 100px;">
+            <span class="value" style="font-size: 1.5rem;">{{ overall_score }}</span>
+        </div>
+        <div class="metric-label">Score General</div>
+        <div class="metric-sub">60% ejecucion + 40% bienestar</div>
+    </div>
+</div>
+
+<!-- Details -->
+<div class="grid grid-2">
+    <div class="card">
+        <div class="card-header">
+            <h3>Metricas de Ejecucion</h3>
+        </div>
+        <div class="flex-between mb-1">
+            <span>Tareas MUST completadas</span>
+            <span class="font-bold">{{ must_pct }}%</span>
+        </div>
+        <div class="progress mb-2">
+            <div class="progress-bar {% if must_pct >= 80 %}green{% elif must_pct >= 50 %}yellow{% else %}red{% endif %}" style="width: {{ must_pct }}%"></div>
+        </div>
+        <div class="flex-between mb-1">
+            <span>Total tareas completadas</span>
+            <span class="font-bold">{{ done_tasks }}/{{ total_tasks }}</span>
+        </div>
+        <div class="progress">
+            <div class="progress-bar blue" style="width: {{ (done_tasks / total_tasks * 100) if total_tasks > 0 else 0 }}%"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3>Metricas Emocionales</h3>
+        </div>
+        <div class="flex-between mb-1">
+            <span>Mood Promedio</span>
+            <div>
+                <span class="font-bold">{{ avg_mood }}/10</span>
+                <div class="progress" style="width: 120px; display: inline-block; vertical-align: middle; margin-left: 0.5rem;">
+                    <div class="progress-bar blue" style="width: {{ avg_mood * 10 }}%"></div>
+                </div>
+            </div>
+        </div>
+        <div class="flex-between mb-1 mt-1">
+            <span>Energia Promedio</span>
+            <div>
+                <span class="font-bold">{{ avg_energy }}/10</span>
+                <div class="progress" style="width: 120px; display: inline-block; vertical-align: middle; margin-left: 0.5rem;">
+                    <div class="progress-bar green" style="width: {{ avg_energy * 10 }}%"></div>
+                </div>
+            </div>
+        </div>
+        <div class="flex-between mb-1 mt-1">
+            <span>Estres Promedio</span>
+            <div>
+                <span class="font-bold">{{ avg_stress }}/10</span>
+                <div class="progress" style="width: 120px; display: inline-block; vertical-align: middle; margin-left: 0.5rem;">
+                    <div class="progress-bar red" style="width: {{ avg_stress * 10 }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Review Form -->
+<div class="card">
+    <div class="card-header">
+        <h3>Reflexion Semanal</h3>
+    </div>
+    <form method="post" action="/plos/weekly/save">
+        <input type="hidden" name="week_start" value="{{ week_start.isoformat() }}">
+
+        <div class="form-group">
+            <label>Que salio bien esta semana? (Wins)</label>
+            <textarea name="wins" placeholder="Celebra tus logros...">{{ review.wins if review else '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label>Que puedo mejorar?</label>
+            <textarea name="improvements" placeholder="Se honesto contigo mismo...">{{ review.improvements if review else '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label>Foco principal de la proxima semana</label>
+            <textarea name="next_week_focus" placeholder="Una cosa en la que enfocarte...">{{ review.next_week_focus if review else '' }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Guardar Revision</button>
+    </form>
+</div>
+
+<!-- Trend -->
+{% if past_reviews %}
+<div class="card">
+    <div class="card-header">
+        <h3>Tendencia de Scores</h3>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Semana</th>
+                <th>Ejecucion</th>
+                <th>Bienestar</th>
+                <th>General</th>
+                <th>MUST %</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in past_reviews %}
+            <tr>
+                <td>{{ r.week_start.strftime('%d %b') }}</td>
+                <td><span class="{% if r.execution_score >= 70 %}text-success{% elif r.execution_score >= 40 %}text-warning{% else %}text-danger{% endif %}">{{ r.execution_score }}%</span></td>
+                <td>{{ r.wellbeing_score }}%</td>
+                <td class="font-bold">{{ r.overall_score }}%</td>
+                <td>{{ r.must_completed_pct }}%</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

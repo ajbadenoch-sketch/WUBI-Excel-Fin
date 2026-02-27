@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% set active = "dashboard" %}
+{% block title %}VidaControl - Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Dashboard Integral</h1>
+        <p class="text-muted">{{ today.strftime('%A %d de %B, %Y') }}</p>
+    </div>
+    <a href="/export/excel" class="btn btn-ghost">Exportar Excel</a>
+</div>
+
+<!-- Master Score -->
+<div class="card" style="text-align: center; padding: 2rem;">
+    <div class="score-ring {% if overall_score >= 75 %}score-excellent{% elif overall_score >= 50 %}score-good{% elif overall_score >= 30 %}score-warning{% else %}score-danger{% endif %}" style="--pct: {{ overall_score }}">
+        <span class="value">{{ overall_score }}</span>
+    </div>
+    <div class="metric-label" style="font-size: 0.9rem;">Score General del Sistema</div>
+    <p class="text-muted mt-1" style="font-size: 0.8rem;">
+        Ejecucion {{ exec_score }}% &bull; Finanzas {{ fin_score }}% &bull; Salud {{ health_score }}%
+    </p>
+</div>
+
+<!-- Three Phase Cards -->
+<div class="grid grid-3">
+    <!-- Phase 1: PLOS -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Fase 1: Estructura</h3>
+            <span class="tag tag-{% if exec_score >= 70 %}nice{% elif exec_score >= 40 %}should{% else %}must{% endif %}">{{ exec_score }}%</span>
+        </div>
+
+        <div class="flex-between mb-1">
+            <span>Tareas Hoy</span>
+            <span class="font-bold">{{ today_done }}/{{ today_total }}</span>
+        </div>
+        <div class="progress">
+            <div class="progress-bar {% if today_total > 0 %}{% if today_done/today_total >= 0.7 %}green{% elif today_done/today_total >= 0.4 %}yellow{% else %}red{% endif %}{% else %}blue{% endif %}"
+                 style="width: {{ (today_done / today_total * 100) if today_total > 0 else 0 }}%"></div>
+        </div>
+
+        <div class="flex-between mt-2 mb-1">
+            <span>MUST completados</span>
+            <span class="font-bold">{{ today_must_done }}/{{ today_must }}</span>
+        </div>
+
+        {% if today_plan %}
+        <div class="mt-2" style="font-size: 0.8rem;">
+            <span class="text-muted">Energia:</span> {{ today_plan.energy_level }}/10
+            &bull;
+            <span class="text-muted">Mood:</span> {{ today_plan.mood_morning }}/10
+            &bull;
+            <span class="text-muted">Estres:</span> {{ today_plan.stress_level }}/10
+        </div>
+        {% endif %}
+
+        {% if latest_review %}
+        <div class="mt-2" style="font-size: 0.8rem; color: var(--text-muted);">
+            Ultima revision: Score {{ latest_review.overall_score }}%
+        </div>
+        {% endif %}
+
+        <a href="/plos/daily" class="btn btn-ghost btn-sm mt-2">Ir a Plan Diario</a>
+    </div>
+
+    <!-- Phase 2: Financial -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Fase 2: Finanzas</h3>
+            <span class="tag tag-{% if fin_score >= 70 %}nice{% elif fin_score >= 40 %}should{% else %}must{% endif %}">{{ fin_score }}%</span>
+        </div>
+
+        <div class="flex-between mb-1">
+            <span>Ingresos Mes</span>
+            <span class="font-bold positive">${{ "{:,.0f}".format(monthly_income) }}</span>
+        </div>
+        <div class="flex-between mb-1">
+            <span>Gastos Mes</span>
+            <span class="font-bold negative">${{ "{:,.0f}".format(monthly_expenses) }}</span>
+        </div>
+        <div class="flex-between mb-1" style="padding-top: 0.5rem; border-top: 1px solid var(--border);">
+            <span class="font-bold">Neto</span>
+            <span class="font-bold {% if monthly_net >= 0 %}positive{% else %}negative{% endif %}">
+                ${{ "{:,.0f}".format(monthly_net) }}
+            </span>
+        </div>
+
+        <div class="mt-2" style="font-size: 0.8rem;">
+            <span class="text-muted">Deuda Total:</span>
+            <span class="{% if total_debt > 0 %}negative{% endif %}">${{ "{:,.0f}".format(total_debt) }}</span>
+        </div>
+        <div style="font-size: 0.8rem;">
+            <span class="text-muted">Patrimonio Neto:</span>
+            <span class="{% if net_worth >= 0 %}positive{% else %}negative{% endif %}">${{ "{:,.0f}".format(net_worth) }}</span>
+        </div>
+
+        <a href="/financial/overview" class="btn btn-ghost btn-sm mt-2">Ir a Finanzas</a>
+    </div>
+
+    <!-- Phase 3: Health -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Fase 3: Salud</h3>
+            <span class="tag tag-{% if health_score >= 70 %}nice{% elif health_score >= 40 %}should{% else %}must{% endif %}">{{ health_score }}%</span>
+        </div>
+
+        {% if latest_health %}
+        {% if latest_health.weight_kg %}
+        <div class="flex-between mb-1">
+            <span>Peso</span>
+            <span class="font-bold">{{ latest_health.weight_kg }} kg</span>
+        </div>
+        {% endif %}
+        {% if latest_health.glucose_fasting %}
+        <div class="flex-between mb-1">
+            <span>Glucosa Ayunas</span>
+            <span class="font-bold {% if latest_health.glucose_fasting > 130 %}negative{% elif latest_health.glucose_fasting <= 100 %}positive{% endif %}">
+                {{ latest_health.glucose_fasting }} mg/dL
+            </span>
+        </div>
+        {% endif %}
+        {% if bmi %}
+        <div class="flex-between mb-1">
+            <span>IMC</span>
+            <span class="font-bold {% if bmi >= 30 %}negative{% elif bmi < 25 %}positive{% else %}text-warning{% endif %}">{{ bmi }}</span>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="empty-state" style="padding: 1rem;">
+            <p class="text-muted">Sin datos de salud aun</p>
+        </div>
+        {% endif %}
+
+        <div class="flex-between mt-2 mb-1">
+            <span>Ejercicio Semanal</span>
+            <span class="font-bold {% if exercise_week >= 150 %}positive{% elif exercise_week >= 90 %}text-warning{% else %}negative{% endif %}">
+                {{ exercise_week }} min
+            </span>
+        </div>
+        <div class="flex-between mb-1">
+            <span>Habitos Hoy</span>
+            <span class="font-bold">{{ habits_done }}/{{ total_habits }}</span>
+        </div>
+
+        <a href="/health/overview" class="btn btn-ghost btn-sm mt-2">Ir a Salud</a>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card">
+    <div class="card-header">
+        <h2>Acciones Rapidas</h2>
+    </div>
+    <div class="flex gap-2" style="flex-wrap: wrap;">
+        <a href="/plos/daily" class="btn btn-primary">Planear Hoy</a>
+        <a href="/financial/transactions" class="btn btn-ghost">Registrar Gasto</a>
+        <a href="/health/metrics" class="btn btn-ghost">Registrar Metricas</a>
+        <a href="/health/habits" class="btn btn-ghost">Marcar Habitos</a>
+        <a href="/plos/weekly" class="btn btn-ghost">Revision Semanal</a>
+        <a href="/export/excel" class="btn btn-ghost">Exportar Reporte</a>
+    </div>
+</div>
+{% endblock %}

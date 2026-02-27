@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% set active = "metrics" %}
+{% block title %}Metricas de Salud{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Metricas de Salud</h1>
+</div>
+
+<!-- Add Metrics Form -->
+<div class="card">
+    <div class="card-header">
+        <h3>Registrar Metricas</h3>
+    </div>
+    <form method="post" action="/health/metric/add">
+        <div class="form-group">
+            <label>Fecha</label>
+            <input type="date" name="metric_date" required style="max-width: 200px;">
+        </div>
+
+        <div class="grid grid-3">
+            <div class="form-group">
+                <label>Peso (kg)</label>
+                <input type="number" step="0.1" name="weight_kg" placeholder="123.0">
+            </div>
+            <div class="form-group">
+                <label>Cintura (cm)</label>
+                <input type="number" step="0.1" name="waist_cm" placeholder="110">
+            </div>
+            <div class="form-group">
+                <label>Glucosa Ayunas (mg/dL)</label>
+                <input type="number" step="1" name="glucose_fasting" placeholder="120">
+            </div>
+        </div>
+
+        <div class="grid grid-3">
+            <div class="form-group">
+                <label>Glucosa Post-comida (mg/dL)</label>
+                <input type="number" step="1" name="glucose_post_meal" placeholder="160">
+            </div>
+            <div class="form-group">
+                <label>PA Sistolica (mmHg)</label>
+                <input type="number" name="blood_pressure_sys" placeholder="130">
+            </div>
+            <div class="form-group">
+                <label>PA Diastolica (mmHg)</label>
+                <input type="number" name="blood_pressure_dia" placeholder="80">
+            </div>
+        </div>
+
+        <div class="grid grid-3">
+            <div class="form-group">
+                <label>HbA1c (%)</label>
+                <input type="number" step="0.1" name="hba1c" placeholder="7.0">
+            </div>
+            <div class="form-group">
+                <label>Horas de Sueno</label>
+                <input type="number" step="0.5" name="sleep_hours" placeholder="7">
+            </div>
+            <div class="form-group">
+                <label>Calidad Sueno (1-10)</label>
+                <input type="range" name="sleep_quality" min="1" max="10" value="5">
+            </div>
+        </div>
+
+        <div class="grid grid-2">
+            <div class="form-group">
+                <label>Nivel de Estres (1-10)</label>
+                <input type="range" name="stress_level" min="1" max="10" value="5">
+            </div>
+            <div class="form-group">
+                <label>Notas</label>
+                <input type="text" name="notes" placeholder="Observaciones del dia">
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Guardar Metricas</button>
+    </form>
+</div>
+
+<!-- History -->
+<div class="card">
+    <div class="card-header">
+        <h3>Historial de Metricas</h3>
+    </div>
+    {% if metrics %}
+    <div style="overflow-x: auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Peso</th>
+                    <th>Cintura</th>
+                    <th>Glucosa A</th>
+                    <th>Glucosa P</th>
+                    <th>PA</th>
+                    <th>HbA1c</th>
+                    <th>Sueno</th>
+                    <th>Estres</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in metrics %}
+                <tr>
+                    <td>{{ m.metric_date.strftime('%d %b') }}</td>
+                    <td>{{ m.weight_kg if m.weight_kg else '-' }}</td>
+                    <td>{{ m.waist_cm if m.waist_cm else '-' }}</td>
+                    <td class="{% if m.glucose_fasting %}{% if m.glucose_fasting > 130 %}text-danger{% elif m.glucose_fasting <= 100 %}text-success{% else %}text-warning{% endif %}{% endif %}">
+                        {{ m.glucose_fasting if m.glucose_fasting else '-' }}
+                    </td>
+                    <td class="{% if m.glucose_post_meal %}{% if m.glucose_post_meal > 180 %}text-danger{% else %}text-success{% endif %}{% endif %}">
+                        {{ m.glucose_post_meal if m.glucose_post_meal else '-' }}
+                    </td>
+                    <td>{% if m.blood_pressure_sys %}{{ m.blood_pressure_sys }}/{{ m.blood_pressure_dia }}{% else %}-{% endif %}</td>
+                    <td class="{% if m.hba1c %}{% if m.hba1c > 7 %}text-danger{% elif m.hba1c <= 6.5 %}text-success{% else %}text-warning{% endif %}{% endif %}">
+                        {{ m.hba1c if m.hba1c else '-' }}
+                    </td>
+                    <td>{% if m.sleep_hours %}{{ m.sleep_hours }}h{% if m.sleep_quality %} ({{ m.sleep_quality }}/10){% endif %}{% else %}-{% endif %}</td>
+                    <td>{{ m.stress_level if m.stress_level else '-' }}/10</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>Sin metricas registradas aun. Comienza registrando tus datos de hoy.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

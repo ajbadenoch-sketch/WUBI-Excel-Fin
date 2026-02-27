@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}VidaControl{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <nav class="sidebar">
+            <div class="sidebar-brand">
+                <h1>VidaControl</h1>
+                <p>Sistema Integral de Vida</p>
+            </div>
+
+            <a href="/dashboard" class="sidebar-link {% if active == 'dashboard' %}active{% endif %}">
+                <span class="icon">&#9679;</span> Dashboard
+            </a>
+
+            <div class="sidebar-section">Fase 1 - Estructura</div>
+            <a href="/plos/daily" class="sidebar-link {% if active == 'daily' %}active{% endif %}">
+                <span class="icon">&#9733;</span> Plan Diario
+            </a>
+            <a href="/plos/weekly" class="sidebar-link {% if active == 'weekly' %}active{% endif %}">
+                <span class="icon">&#9670;</span> Revision Semanal
+            </a>
+
+            <div class="sidebar-section">Fase 2 - Finanzas</div>
+            <a href="/financial/overview" class="sidebar-link {% if active == 'fin-overview' %}active{% endif %}">
+                <span class="icon">&#9650;</span> Resumen Financiero
+            </a>
+            <a href="/financial/transactions" class="sidebar-link {% if active == 'transactions' %}active{% endif %}">
+                <span class="icon">&#9654;</span> Transacciones
+            </a>
+            <a href="/financial/debts" class="sidebar-link {% if active == 'debts' %}active{% endif %}">
+                <span class="icon">&#9660;</span> Control de Deuda
+            </a>
+
+            <div class="sidebar-section">Fase 3 - Salud</div>
+            <a href="/health/overview" class="sidebar-link {% if active == 'health' %}active{% endif %}">
+                <span class="icon">&#9829;</span> Salud General
+            </a>
+            <a href="/health/metrics" class="sidebar-link {% if active == 'metrics' %}active{% endif %}">
+                <span class="icon">&#9678;</span> Metricas
+            </a>
+            <a href="/health/habits" class="sidebar-link {% if active == 'habits' %}active{% endif %}">
+                <span class="icon">&#10003;</span> Habitos
+            </a>
+
+            <div class="sidebar-section">Herramientas</div>
+            <a href="/export/excel" class="sidebar-link">
+                <span class="icon">&#8681;</span> Exportar Excel
+            </a>
+            <a href="/logout" class="sidebar-link">
+                <span class="icon">&#10148;</span> Salir
+            </a>
+        </nav>
+
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

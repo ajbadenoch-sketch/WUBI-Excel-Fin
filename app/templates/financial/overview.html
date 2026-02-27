@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% set active = "fin-overview" %}
+{% block title %}Resumen Financiero{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Resumen Financiero</h1>
+        <div class="nav-arrows mt-1">
+            <a href="/financial/overview?month={{ prev_month }}&year={{ prev_year }}">&#9664;</a>
+            <span>{{ ['', 'Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][month] }} {{ year }}</span>
+            <a href="/financial/overview?month={{ next_month }}&year={{ next_year }}">&#9654;</a>
+        </div>
+    </div>
+    <a href="/export/excel" class="btn btn-ghost">Exportar Excel</a>
+</div>
+
+<!-- Top Metrics -->
+<div class="grid grid-4">
+    <div class="metric-card">
+        <div class="metric-value positive">${{ "{:,.0f}".format(income) }}</div>
+        <div class="metric-label">Ingresos</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value negative">${{ "{:,.0f}".format(expenses) }}</div>
+        <div class="metric-label">Gastos</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-value {% if net >= 0 %}positive{% else %}negative{% endif %}">${{ "{:,.0f}".format(net) }}</div>
+        <div class="metric-label">Neto</div>
+        {% if income > 0 %}
+        <div class="metric-sub">Margen: {{ "{:.0f}".format(net/income*100) }}%</div>
+        {% endif %}
+    </div>
+    <div class="metric-card">
+        <div class="metric-value {% if net_worth >= 0 %}positive{% else %}negative{% endif %}">${{ "{:,.0f}".format(net_worth) }}</div>
+        <div class="metric-label">Patrimonio Neto</div>
+    </div>
+</div>
+
+<div class="grid grid-2">
+    <!-- Accounts -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Cuentas</h3>
+            <button class="btn btn-sm btn-primary" onclick="document.getElementById('addAccount').classList.add('active')">+ Cuenta</button>
+        </div>
+        {% if accounts %}
+        <table>
+            <thead><tr><th>Cuenta</th><th>Tipo</th><th class="text-right">Saldo</th></tr></thead>
+            <tbody>
+                {% for a in accounts %}
+                <tr>
+                    <td>{{ a.name }}</td>
+                    <td><span class="tag">{{ a.account_type }}</span></td>
+                    <td class="text-right font-bold {% if a.balance >= 0 %}positive{% else %}negative{% endif %}">${{ "{:,.0f}".format(a.balance) }}</td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td colspan="2" class="font-bold">Total</td>
+                    <td class="text-right font-bold">${{ "{:,.0f}".format(total_balance) }}</td>
+                </tr>
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <p>Sin cuentas registradas</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Expenses by Category -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Gastos por Categoria</h3>
+        </div>
+        {% if expense_by_cat %}
+        {% for cat, amount in expense_by_cat %}
+        <div class="flex-between mb-1">
+            <span>{{ cat }}</span>
+            <span class="font-bold">${{ "{:,.0f}".format(amount) }}</span>
+        </div>
+        <div class="progress mb-1">
+            <div class="progress-bar red" style="width: {{ (amount / expenses * 100) if expenses > 0 else 0 }}%"></div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-state"><p>Sin gastos este mes</p></div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Budgets -->
+<div class="card">
+    <div class="card-header">
+        <h3>Presupuestos</h3>
+        <button class="btn btn-sm btn-primary" onclick="document.getElementById('addBudget').classList.add('active')">+ Presupuesto</button>
+    </div>
+    {% if budget_status %}
+    <div class="grid grid-3">
+        {% for b in budget_status %}
+        <div style="padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
+            <div class="flex-between mb-1">
+                <span class="font-bold">{{ b.category }}</span>
+                <span class="{% if b.over %}text-danger{% else %}text-success{% endif %}">${{ "{:,.0f}".format(b.spent) }} / ${{ "{:,.0f}".format(b.limit) }}</span>
+            </div>
+            <div class="progress">
+                <div class="progress-bar {% if b.pct >= 90 %}red{% elif b.pct >= 70 %}yellow{% else %}green{% endif %}" style="width: {{ b.pct }}%"></div>
+            </div>
+            <div class="text-muted mt-1" style="font-size: 0.75rem;">
+                {% if b.over %}Excedido por ${{ "{:,.0f}".format(-b.remaining) }}{% else %}Disponible: ${{ "{:,.0f}".format(b.remaining) }}{% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state"><p>Sin presupuestos definidos para este mes</p></div>
+    {% endif %}
+</div>
+
+<!-- Debt Summary -->
+{% if debts %}
+<div class="card">
+    <div class="card-header">
+        <h3>Resumen de Deuda</h3>
+        <a href="/financial/debts" class="btn btn-sm btn-ghost">Ver detalle</a>
+    </div>
+    <table>
+        <thead><tr><th>Deuda</th><th>Saldo</th><th>Tasa</th><th>Pago Min</th></tr></thead>
+        <tbody>
+            {% for d in debts %}
+            <tr>
+                <td>{{ d.name }}</td>
+                <td class="negative">${{ "{:,.0f}".format(d.current_balance) }}</td>
+                <td>{{ d.interest_rate }}%</td>
+                <td>${{ "{:,.0f}".format(d.minimum_payment) }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="font-bold">
+                <td>Total</td>
+                <td class="negative">${{ "{:,.0f}".format(total_debt) }}</td>
+                <td></td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- Monthly Trend -->
+<div class="card">
+    <div class="card-header"><h3>Tendencia 6 Meses</h3></div>
+    <table>
+        <thead><tr><th>Mes</th><th class="text-right">Ingresos</th><th class="text-right">Gastos</th><th class="text-right">Neto</th></tr></thead>
+        <tbody>
+            {% for t in trend %}
+            <tr>
+                <td>{{ t.month }}</td>
+                <td class="text-right positive">${{ "{:,.0f}".format(t.income) }}</td>
+                <td class="text-right negative">${{ "{:,.0f}".format(t.expenses) }}</td>
+                <td class="text-right font-bold {% if t.net >= 0 %}positive{% else %}negative{% endif %}">${{ "{:,.0f}".format(t.net) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Account Modal -->
+<div id="addAccount" class="modal-overlay">
+    <div class="modal">
+        <h2>Agregar Cuenta</h2>
+        <form method="post" action="/financial/account/add">
+            <div class="form-group">
+                <label>Nombre</label>
+                <input type="text" name="name" required placeholder="Ej: BBVA Nomina">
+            </div>
+            <div class="form-group">
+                <label>Tipo</label>
+                <select name="account_type">
+                    <option value="checking">Cuenta Cheques</option>
+                    <option value="savings">Ahorro</option>
+                    <option value="credit_card">Tarjeta de Credito</option>
+                    <option value="cash">Efectivo</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Saldo Actual</label>
+                <input type="number" step="0.01" name="balance" value="0">
+            </div>
+            <div class="flex gap-1">
+                <button type="submit" class="btn btn-primary">Guardar</button>
+                <button type="button" class="btn btn-ghost" onclick="this.closest('.modal-overlay').classList.remove('active')">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Budget Modal -->
+<div id="addBudget" class="modal-overlay">
+    <div class="modal">
+        <h2>Agregar Presupuesto</h2>
+        <form method="post" action="/financial/budget/add">
+            <input type="hidden" name="month" value="{{ month }}">
+            <input type="hidden" name="year" value="{{ year }}">
+            <div class="form-group">
+                <label>Categoria</label>
+                <select name="category">
+                    {% for cat in expense_categories %}
+                    <option value="{{ cat }}">{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Limite Mensual ($)</label>
+                <input type="number" step="0.01" name="monthly_limit" required placeholder="5000">
+            </div>
+            <div class="flex gap-1">
+                <button type="submit" class="btn btn-primary">Guardar</button>
+                <button type="button" class="btn btn-ghost" onclick="this.closest('.modal-overlay').classList.remove('active')">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
